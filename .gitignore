@@ -1,52 +1,770 @@
-# Prerequisites
-*.d
+#include <stdio.h>//entrada e saída
+#include <stdlib.h>//funções e constantes básicas
+#include <string.h>//funções que manipulam strings
+#include<locale.h>//para acentuação no programa
 
-# Object files
-*.o
-*.ko
-*.obj
-*.elf
 
-# Linker output
-*.ilk
-*.map
-*.exp
+#define TAM 1000
 
-# Precompiled Headers
-*.gch
-*.pch
+int quant_consumidores = 0;
+int quant_usinas = 0;
+int quant_contratos = 0;
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
 
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
 
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
-*.hex
+//struct do consumidor
+typedef struct consumidor{
+    char dados[20];
+    char nome[100];
+}Consumidor;
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+//struct da Usina
+typedef struct usina{
+    char cnpj[20];
+    char nome[100];
+    char data_inicio[15];
+    float potencia;
+}Usina;
+
+
+//struct para o contrato
+typedef struct contrato{
+    char cnpj[20];
+    char dados[20];
+    char nome[100];
+    char data_inicio_contrato[15];
+    float potencia_contratada;
+}Contrato;
+
+
+Consumidor todos_consumidores[TAM];
+Usina todas_usinas[TAM];
+Contrato todos_contratos[TAM];
+
+// envia dados cadastrados do consumidor
+void enviar_dados_consumidores(){
+    FILE *arquivo_consumidores = fopen("consumidores.txt", "w");
+    for(int i=0;i<quant_consumidores; i++){
+        fprintf(arquivo_consumidores, "%s\n", todos_consumidores[i].nome);
+        fprintf(arquivo_consumidores, "%s\n", todos_consumidores[i].dados);
+        fprintf(arquivo_consumidores, "%s\n", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    }
+    fclose(arquivo_consumidores);
+}
+
+// envia dados cadastrados da usina
+void enviar_dados_usinas(){
+    FILE *arquivo_usinas = fopen("usinas.txt", "w");
+    for(int i=0;i<quant_usinas; i++){
+        fprintf(arquivo_usinas, "%s\n", todas_usinas[i].nome);
+        fprintf(arquivo_usinas, "%s\n", todas_usinas[i].cnpj);
+        fprintf(arquivo_usinas, "%f\n", todas_usinas[i].potencia);
+        fprintf(arquivo_usinas, "%s\n", todas_usinas[i].data_inicio);
+        fprintf(arquivo_usinas, "%s\n", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    }
+    fclose(arquivo_usinas);
+}
+
+// envia dados cadastrados do contrato
+void enviar_dados_contratos(){
+    FILE *arquivo_contratos = fopen("contratos.txt", "w");
+    for(int i=0;i<quant_contratos; i++){
+        fprintf(arquivo_contratos, "%s\n", todos_contratos[i].cnpj);
+        fprintf(arquivo_contratos, "%f\n", todos_contratos[i].potencia_contratada);
+        fprintf(arquivo_contratos, "%s\n", todos_contratos[i].data_inicio_contrato);
+        fprintf(arquivo_contratos, "%s\n", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+    }
+    fclose(arquivo_contratos);
+}
+
+
+int valida_data(char data[15]){
+    int tam = strlen(data);
+
+
+    if(tam != 10){
+        return 0;
+    }
+
+    if(data[2] != '/' || data[5] != '/')
+        return 0;
+
+    int dia = (data[0] - '0') * 10 + (data[1]- '0');
+
+    if(dia < 1 || dia > 31)
+        return 0;
+
+    int mes = (data[3] - '0') * 10 + (data[4]- '0');
+
+
+    if(mes < 1 || mes > 12)
+        return 0;
+
+
+    int ano = ((data[6] - '0') * 1000) + ((data[7]- '0') * 100) + ((data[8]- '0') * 10) + (data[9]- '0');
+
+
+    if(ano < 1980 || ano > 2022)
+        return 0;
+
+
+    return 1;
+}
+
+
+int validar_cpf(char cpf[15]){
+    int tam = strlen(cpf);
+
+    if(tam != 11)
+        return 0;
+
+
+    int prim_digito = cpf[0];
+    int cont_iguais = 1;
+    for(int i=1;i<tam;i++){
+        if(cpf[i] == prim_digito){
+            cont_iguais = cont_iguais + 1;
+        }
+    }
+
+    if(cont_iguais == 11)
+        return 0;
+
+    int soma = 0;
+    int multiplicador = 10;
+    int parcela;
+    for(int i=0;i<tam-2;i++){
+        parcela = (cpf[i] - '0') * multiplicador;
+        multiplicador = multiplicador - 1;
+        soma = soma + parcela;
+    }
+
+
+    int resto_divisao = (soma * 10)%11;
+    if(resto_divisao == 10)
+        resto_divisao = 0;
+    if(resto_divisao != (cpf[9] - '0')){
+        return 0;
+    }
+
+    //primeiro digíto válidado
+
+    int soma_2 = 0;
+    int multiplicador_2 = 11;
+    int parcela_2;
+    for(int i=0;i<tam-1;i++){
+        parcela_2 = (cpf[i] - '0') * multiplicador_2;
+        multiplicador_2 = multiplicador_2 - 1;
+        soma_2 = soma_2 + parcela_2;
+    }
+
+
+    int resto_divisao_2 = (soma_2 * 10)%11;
+    if(resto_divisao_2 == 10)
+        resto_divisao_2 = 0;
+
+    if(resto_divisao_2 != (cpf[10] - '0')){
+        return 0;
+    }
+    return 1;
+}
+
+
+
+int validar_cnpj(char cnpj[20]){
+
+
+    int tam = strlen(cnpj);
+
+
+    if(tam != 14){
+        return 0;
+    }
+
+    int cont_iguais = 0;
+    int prim = cnpj[0] -  '0';
+    for(int i=0;i<tam;i++){
+        if(prim == cnpj[i] - '0')
+            cont_iguais = cont_iguais + 1;
+    }
+
+    if(cont_iguais == tam-1){
+        return 0;
+    }
+
+    int soma = ((cnpj[0] - '0') * 5) + ((cnpj[1] - '0') * 4) + ((cnpj[2] - '0') * 3)
+    + ((cnpj[3] - '0') * 2) + ((cnpj[4] - '0') * 9) + ((cnpj[5] - '0') * 8) + ((cnpj[6] - '0') * 7)
+    + ((cnpj[7] - '0') * 6) + ((cnpj[8] - '0') * 5) + ((cnpj[9] - '0') * 4) + ((cnpj[10] - '0') * 3) + ((cnpj[11] - '0') * 2);
+
+    int resto_1 = soma%11;
+
+    if(resto_1 < 2){
+        resto_1 = 0;
+    }
+
+    else{
+        resto_1 = (11 - resto_1);
+    }
+
+
+    int segunda_soma = ((cnpj[0] - '0') * 6) + ((cnpj[1] - '0') * 5) + ((cnpj[2] - '0') * 4) + ((cnpj[3] - '0') * 3) + ((cnpj[4] - '0') * 2)
+    + ((cnpj[5] - '0') * 9) + ((cnpj[6] - '0') * 8) + ((cnpj[7] - '0') * 7) +
+    ((cnpj[8] - '0') * 6) + ((cnpj[9] - '0') * 5) + ((cnpj[10] - '0') * 4) + ((cnpj[11] - '0') * 3) + ((resto_1) * 2);
+
+
+
+    int resto_2 = segunda_soma%11;
+
+
+    if(resto_2 < 2){
+        resto_2 = 0;
+    }
+    else{
+        resto_2 = (11 - resto_2);
+    }
+
+    if((resto_1 != cnpj[12] - '0') || resto_2 != cnpj[13] - '0')
+        return 0;
+
+
+    return 1;
+
+}
+
+
+
+int menu(){
+
+    int opcao;
+    printf("\nSISTEMA DE GERENCIAMENTO DE USINAS DE ENERGIA FOTOVOLTAICA\n");
+    printf("_______________________________________________________\n");
+    printf("\nDigite [1] Cadastrar Usina\n");
+    printf("Digite [2] Cadastrar Consumidor\n");
+    printf("Digite [3] Cadastrar Contrato entre Consumidor e Usina\n");
+    printf("Digite [4] Consultar Usina Cadastrada\n");
+    printf("Digite [5] Consultar Consumidor Cadastrado\n");
+    printf("Digite [6] Excluir Usina\n");
+    printf("Digite [7] Excluir Consumidor\n");
+    printf("Digite [8] Encerrar Programa\n");
+    printf("_______________________________________________________\n");
+    printf("\nOPÇÃO:");
+    scanf("%i", &opcao);
+
+
+    while(opcao < 1 || opcao > 8){ // for invalida
+        printf("\nOpção inválida | Digite um valor entre 1 e 8:");
+        scanf("%i", &opcao);
+    };
+
+    return opcao;
+}
+
+void cadastrar_consumidor_cpf(){
+    Consumidor consumidor;
+    printf("[Cadastro do Consumidor]\n\n");
+    printf("NOME:");
+    fflush(stdin);
+    gets(consumidor.nome);
+    printf("INFORME CPF/CNPJ:");
+    fflush(stdin);
+    gets(consumidor.dados);
+
+    if(validar_cpf(consumidor.dados) == 0&& validar_cnpj(consumidor.dados)== 0){
+        printf("Dados incorreto, informe novamente(somente números)\n");
+        printf("INFORME CPF/CNPJ:");
+        return;
+    }
+
+    todos_consumidores[quant_consumidores] = consumidor;
+    printf("\nConsumidor cadastrado com sucesso!\n");
+    quant_consumidores = quant_consumidores + 1;
+    printf("\n\nPressione enter...");
+    fflush(stdin);
+    enviar_dados_consumidores();
+    getchar();
+}
+
+
+void cadastrar_usina(){
+    Usina usina;
+    printf("[Cadastro da Usina]\n\n");
+    printf("NOME:");
+    fflush(stdin);
+    gets(usina.nome);
+    printf("CNPJ:");
+    fflush(stdin);
+    gets(usina.cnpj);
+
+     while(validar_cnpj(usina.cnpj) == 0){
+        printf("\nCNPJ incorreto, informe novamente(somente números).\n");
+        printf("\nCNPJ:");
+        fflush(stdin);
+        gets(usina.cnpj);
+    }
+    printf("Potência:");
+    scanf("%f", &usina.potencia);
+    printf("Data de início da Usina(DD/MM/AA):");
+    fflush(stdin);
+    gets(usina.data_inicio);
+
+
+    while(valida_data(usina.data_inicio)==0){
+        printf("\nData incorreta, informe uma data no formato (DD/MM/AA):");
+        fflush(stdin);
+        gets(usina.data_inicio);
+    }
+
+
+    printf("\nUsina cadastrada com sucesso!\n");
+    todas_usinas[quant_usinas] = usina;
+    quant_usinas = quant_usinas + 1;
+    printf("\n\nPressione enter...");
+    fflush(stdin);
+    enviar_dados_usinas();
+    getchar();
+}
+
+
+int calcular_potencia_disponivel(char cnpj[20]){ //soma todos os valores das potencias usadas nos contratos daquela usina
+    int potencia = 0;
+    for(int i=0;i<quant_contratos;i++){
+        if(atoi(cnpj) == atoi(todos_contratos[i].cnpj)){
+            potencia = potencia + todos_contratos[i].potencia_contratada;
+        }
+    }
+    return potencia; //diminui o valor da potencia que a usina é capaz de gerar menos o somatorio
+}
+
+int consultar_consumidor(){
+    char dados[20];
+    printf("\n[Consulta de Consumidor]\n\n");
+    printf("CPF/CNPJ do Consumidor:");
+    fflush(stdin);
+    gets(dados);
+
+
+    for(int i = 0; i < quant_consumidores; i++){
+
+        if(atoi(dados) == atoi(todos_consumidores[i].dados)){
+            printf("\n\n[Dados encontrados]\n");
+            printf("\nNOME:%s", todos_consumidores[i].nome);
+            printf("\nCPF/CNPJ:%s", todos_consumidores[i].dados);
+
+            printf("\n\nUsinas com contratos:\n\n");
+            for(int j=0;j<quant_contratos;j++){
+                if(atoi(dados) == atoi(todos_contratos[j].dados)){
+                   printf("\nCNPJ:%s", todos_contratos[j].cnpj);
+                }
+            }
+            printf("\n");
+
+            printf("\n\nPressione enter...");
+            fflush(stdin);
+            getchar();
+            return i;
+        }
+    }
+
+
+    printf("\n\nConsumidor não cadastrado.\n");
+    printf("\n\nPressione enter...");
+    fflush(stdin);
+    getchar();
+    return -1;
+
+
+}
+
+
+
+int consultar_usina(){
+    char cnpj[20];
+    printf("\n[Consulta de Usina]\n\n");
+    printf("CNPJ da Usina:");
+    fflush(stdin);
+    gets(cnpj);
+
+
+    for(int i = 0; i < quant_usinas; i++){
+
+        if(atoi(cnpj) == atoi(todas_usinas[i].cnpj)){
+            printf("\n\n[Dados encontrados]\n");
+            printf("\nNOME:%s", todas_usinas[i].nome);
+            printf("\nCNPJ:%s", todas_usinas[i].cnpj);
+            printf("\nPotência:%.2f", todas_usinas[i].potencia);
+            printf("\nPotência disponível:%.2f", todas_usinas[i].potencia - calcular_potencia_disponivel(todas_usinas[i].cnpj));
+            printf("\nData de início:%s\n", todas_usinas[i].data_inicio);
+
+            printf("\n\nConsumidores vinculados:\n\n");
+            for(int j=0;j<quant_contratos;j++){
+                if(atoi(cnpj) == atoi(todos_contratos[j].cnpj)){
+                   printf("\nCPF:%s", todos_contratos[j].dados);
+                }
+            }
+            printf("\n");
+
+            printf("\n\nPressione enter...");
+            fflush(stdin);
+            getchar();
+            return i;
+        }
+    }
+
+
+    printf("\n\nUsina não cadastrada.\n");
+    printf("\n\nPressione enter...");
+    fflush(stdin);
+    getchar();
+    return -1;
+
+
+}
+
+
+void imprimir_usinas(){
+    if(quant_usinas == 0){
+        printf("\n\nNão existem usinas cadastradas.\n");
+    }
+    else{
+        printf("\n\n            [Usinas cadastradas]\n");
+        for(int i=0;i<quant_usinas;i++){
+            printf("\nNOME:%s", todas_usinas[i].nome);
+            printf("\nCNPJ:%s", todas_usinas[i].cnpj);
+            printf("\nPotência:%.2f", todas_usinas[i].potencia);
+            printf("\nData de início:%s\n", todas_usinas[i].data_inicio);
+        }
+        printf("\n");
+    }
+}
+
+
+
+void imprimir_consumidores(){
+    if(quant_consumidores == 0){
+        printf("\n\nNão existem consumidores cadastrados.\n");
+    }
+    else{
+        printf("\n\n            [Consumidores cadastrados]\n");
+        for(int i=0;i<quant_consumidores;i++){
+            printf("\nNOME:%s", todos_consumidores[i].nome);
+            printf("\nCPF:%s", todos_consumidores[i].dados);
+        }
+    }
+}
+
+
+
+int cadastrar_contrato(){
+
+
+    char cnpj[20];
+    char dados[20];
+
+    Contrato contrato;
+    Usina usina;
+
+    int encontrou_usina = 0;
+    int encontrou_consumidor = 0;
+
+
+    printf("\n\n            [Cadastro de contrato]\n\n");
+    imprimir_usinas();
+    printf("\nCNPJ da Usina:");
+    fflush(stdin);
+    gets(cnpj);
+
+    //procura a usina no cadastro
+    for(int i = 0; i < quant_usinas; i++){
+        if(atoi(cnpj) == atoi(todas_usinas[i].cnpj)){
+            usina = todas_usinas[i];
+            encontrou_usina = 1;
+            break;
+        }
+    }
+
+    if(encontrou_usina == 0){
+        printf("\n\nUsina não cadastrada.\n");
+        printf("\n\nPressione enter...");
+        fflush(stdin);
+        getchar();
+        return 0;
+    }
+
+    imprimir_consumidores();
+    printf("\n\nCPF/CNPJ do Consumidor:");
+    fflush(stdin);
+    gets(dados);
+
+
+
+    //procura o consumidor no cadastro
+    for(int i = 0; i < quant_consumidores; i++){
+        if(atoi(dados) == atoi(todos_consumidores[i].dados)){
+            encontrou_consumidor = 1;
+            break;
+        }
+    }
+
+
+    if(encontrou_consumidor == 0){
+        printf("\n\nConsumidor não cadastrado.\n");
+        printf("\n\nPressione enter...");
+        fflush(stdin);
+        getchar();
+        return 0;
+    }
+
+    float potencia_disponivel = usina.potencia - calcular_potencia_disponivel(usina.cnpj);
+    float potencia_contratada;
+    printf("\nPotencia disponivel:%.2f", potencia_disponivel);
+
+    printf("\nQuanto de potencia deseja contratar:");
+    scanf("%f", &potencia_contratada);
+
+    while(potencia_contratada > potencia_disponivel || potencia_contratada < 0){
+        printf("\n\nPotência errada, digite um valor entre 0 e %.2f", potencia_disponivel);
+        printf("\nQuanto de potencia deseja contratar:");
+        scanf("%f", &potencia_contratada);
+    }
+
+
+
+    //verifica a potência digitada pelo usuário
+    while(potencia_contratada > potencia_disponivel || potencia_contratada < 0){
+        printf("\nA potência disponível é:%.2f", potencia_disponivel);
+        printf("\nFoi informado um valor de:%.2f", potencia_contratada);
+        printf("\nInforme a potência novamente(valor positivo):");
+        scanf("%f", &potencia_contratada);
+    }
+
+
+    printf("Data do contrato(DD/MM/AA):");
+    fflush(stdin);
+    gets(contrato.data_inicio_contrato);
+
+
+    while(valida_data(contrato.data_inicio_contrato)==0){
+        printf("\nData incorreta, informe uma data no formato(DD/MM/AA):");
+        fflush(stdin);
+        gets(contrato.data_inicio_contrato);
+    }
+
+
+
+    strcpy(contrato.cnpj, cnpj);
+    strcpy(contrato.dados, dados);
+    contrato.potencia_contratada = potencia_contratada;
+
+
+    todos_contratos[quant_contratos] = contrato;
+    quant_contratos = quant_contratos + 1;
+
+
+    enviar_dados_contratos();
+
+    printf("\n\nCadastro do contrato realizado com sucesso.\n");
+    printf("\nPressione enter...");
+    fflush(stdin);
+    getchar();
+    return 1;
+}
+
+
+
+
+
+int excluir_consumidor(){
+    char dados[20];
+
+
+    printf("\n[Exclusão de Consumidor]\n\n");
+    printf("CPF/CNPJ do consumidor:");
+    fflush(stdin);
+    gets(dados);
+
+
+    int posicao_consumidor = -1;
+
+    for(int i=0; i<quant_consumidores;i++){
+        if(atoi(todos_consumidores[i].dados)==atoi(dados)){
+            posicao_consumidor = i;
+            break;
+        }
+    }
+
+
+
+    if(posicao_consumidor == -1){
+        printf("\n\nConsumidor não cadastrado.\n");
+        return 0;
+    }
+
+    else{
+
+        for(int i=posicao_consumidor;i<quant_consumidores;i++){
+            todos_consumidores[i] = todos_consumidores[i+1];
+
+        }
+
+        quant_consumidores = quant_consumidores - 1;
+        enviar_dados_consumidores();
+
+        Contrato contratos_atualizados[TAM];
+        int cont = 0;
+
+        int num_contratos = quant_contratos;
+        for(int i=0;i<num_contratos;i++){
+
+            if(atoi(todos_consumidores[i].dados)!=atoi(dados)){
+                contratos_atualizados[cont] = todos_contratos[i];
+                cont = cont + 1;
+            }
+            else{
+                quant_contratos = quant_contratos - 1;
+            }
+        }
+
+
+        for(int j=0;j<cont;j++){
+            todos_contratos[j] = contratos_atualizados[j];
+        }
+
+        enviar_dados_contratos();
+        printf("\n\nTodos os contratos realizados com esta Usina forma excluídos.\n");
+        printf("\n\nPressione enter...");
+        fflush(stdin);
+        getchar();
+    }
+
+    return 1;
+
+}
+
+
+
+int excluir_usina(){
+
+    char cnpj[20];
+    printf("\n[Exclusão de Usina]\n\n");
+
+
+    printf("CNPJ da usina:");
+    fflush(stdin);
+    gets(cnpj);
+    int posicao_usina = -1;
+
+    for(int i=0; i<quant_usinas;i++){
+        if(atoi(todas_usinas[i].cnpj)==atoi(cnpj)){
+            posicao_usina = i;
+            break;
+        }
+    }
+
+
+
+    if(posicao_usina == -1){
+        printf("\n\nUsina não cadastrada.\n");
+        return 0;
+    }
+
+    else{
+
+        for(int i=posicao_usina;i<quant_usinas;i++){
+            todas_usinas[i] = todas_usinas[i+1];
+        }
+
+        quant_usinas = quant_usinas - 1;
+        enviar_dados_usinas();
+
+
+        //Altera os contratos
+
+        Contrato contratos_atualizados[TAM];
+        int cont = 0;
+        int num_contratos = quant_contratos;
+
+        for(int i=0;i<num_contratos;i++){
+
+            if(atoi(todos_contratos[i].cnpj)!= atoi(cnpj)){
+                printf("\nCNPJ:%s", todos_contratos[i].cnpj);
+                printf("\nCNPJ digitado:%s", cnpj);
+                contratos_atualizados[cont] = todos_contratos[i];
+                cont = cont + 1;
+            }
+        }
+
+        quant_contratos = cont;
+
+
+        for(int j=0;j<quant_contratos;j++){
+            todos_contratos[j] = contratos_atualizados[j];
+        }
+
+        enviar_dados_contratos();
+
+        printf("\n\nTodos os contratos realizados com esta Usina foram excluídos.\n");
+        printf("\n\nPressione enter...");
+        fflush(stdin);
+        getchar();
+    }
+
+    return 1;
+
+}
+
+
+
+
+int main(){
+    setlocale(LC_ALL, "Portuguese");
+    int opcao;
+
+
+    //menu do programa, irá repetir até que o usuário digite 8 para encerrar
+    do{
+        system("cls");
+        opcao = menu();
+        system("cls");
+
+        switch(opcao){
+            case 1:{
+                cadastrar_usina();
+                break;
+            }
+            case 2:{
+                cadastrar_consumidor_cpf();
+                break;
+            }
+            case 3:{
+                cadastrar_contrato();
+                break;
+            }
+            case 4:{
+                consultar_usina();
+                break;
+            }
+            case 5:{
+                consultar_consumidor();
+                break;
+            }
+            case 6:{
+                excluir_usina();
+                break;
+            }
+            case 7:{
+                excluir_consumidor();
+                break;
+            }
+            case 8:{
+                printf("\n\nPrograma encerrado.\n\n");
+                break;
+            }
+            default:
+                break;
+        }
+
+
+
+    }while(opcao != 8);
+}
